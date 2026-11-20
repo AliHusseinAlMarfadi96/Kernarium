@@ -1,0 +1,66 @@
+name: ios26-app
+on:
+  workflow_dispatch:
+defaults:
+  run:
+    shell: bash
+jobs:
+  build-app:
+    runs-on: xcode-27
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 93b26e2c51e10bbdc3281841cf634c44306688dd
+      - name: Lower iOS deployment target to 26.0
+        run: |
+          sed -i '' -E 's/(DEPLOYMENT_TARGET[ =]+)27\.0/\126.0/; s/(deployment_target[[:space:]]+)27\.0/\126.0/; s/MINOS 27\.0/MINOS 26.0/; s/(_uml_apple_deployment_target )27\.0/\126.0/; s/(_deployment_target )27\.0/\126.0/' \
+            cmake/toolchains/Apple.cmake dependencies/build*.sh dependencies/ios-static-xcframework.sh dependencies/cmake/Verify*.cmake \
+            dependencies/platforms/ios-*.tsv
+          sed -i '' -E 's/\.macOS\("27\.0"\), \.iOS\("27\.0"\)/.macOS("26.0"), .iOS("26.0")/' Andarium/AndariumCore/Package.swift GuestHost/Core/Package.swift
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 27\.0/IPHONEOS_DEPLOYMENT_TARGET = 26.0/' Kernarium/Kernarium.xcodeproj/project.pbxproj Kernarium/AudioInterrupter/AudioInterrupter.xcodeproj/project.pbxproj
+          sed -i '' 's/"IPHONEOS_DEPLOYMENT_TARGET": "27.0"/"IPHONEOS_DEPLOYMENT_TARGET": "26.0"/' Andarium/Andarium.xcodeproj/project.xcproj
+          git diff --stat | tail -2
+      - name: Build tools
+        run: |
+          xcodebuild -version; df -h /
+          brew install cmake ninja meson autoconf automake gettext libtool gperf groff pkg-config rsync python@3.12
+          pip3 install --break-system-packages mako pyyaml packaging
+          xcodebuild -downloadComponent MetalToolchain || true
+          git config --global user.email ci@example.com; git config --global user.name ci
+      - name: deps ios-network
+        run: |
+          if ! ( ./dependencies/prepare.sh --product ios-network && ./dependencies/build-ios-network.sh --platform ios --jobs 3 ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          tail -n 8 /tmp/step.log; df -h /
+      - name: deps ios-storage
+        run: |
+          if ! ( ./dependencies/prepare.sh --product ios-storage && ./dependencies/build-ios-storage.sh ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          tail -n 8 /tmp/step.log; df -h /
+      - name: deps ios-compression
+        run: |
+          if ! ( ./dependencies/prepare.sh --product ios-compression && ./dependencies/build-ios-zstd.sh ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          tail -n 8 /tmp/step.log; df -h /
+      - name: deps apple-gpu ios
+        run: |
+          if ! ( ./dependencies/prepare.sh --product apple-gpu-vulkan-experiment && ./dependencies/build-apple-gpu.sh --platform ios --jobs 3 ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          tail -n 8 /tmp/step.log; df -h /
+      - name: fetch release assets
+        run: |
+          if ! ( set -e; mkdir -p /tmp/rel .build/kernel/artifacts; cd /tmp/rel; curl -fsSL -O https://github.com/imxieyi/Kernarium/releases/download/1.0b15-release/android-6.18-arm64-4k-20261117-6.18.60-vd2.tar.gz -O https://github.com/imxieyi/Kernarium/releases/download/1.0b15-release/lineage24-mainline6.18-4k-20261115-los24-r28.tar.gz; ls -la; tar -tzf android-6.18-arm64-4k-20261117-6.18.60-vd2.tar.gz | head -5; tar -tzf lineage24-mainline6.18-4k-20261115-los24-r28.tar.gz | head -5; tar -xzf android-6.18-arm64-4k-20261117-6.18.60-vd2.tar.gz -C "$GITHUB_WORKSPACE/.build/kernel/artifacts"; mkdir -p rel && tar -xzf lineage24-mainline6.18-4k-20261115-los24-r28.tar.gz -C rel; ls "$GITHUB_WORKSPACE/.build/kernel/artifacts" rel ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          tail -n 8 /tmp/step.log; df -h /
+      - name: install release
+        run: |
+          if ! ( ls /tmp/rel/rel; python3 android/lineage-24/tools/install-release.py --source "$(ls -d /tmp/rel/rel/* | head -1)" || python3 android/lineage-24/tools/install-release.py --source /tmp/rel/rel ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          tail -n 8 /tmp/step.log; df -h /
+      - name: runtime cmake
+        run: |
+          if ! ( cmake --preset kernarium-ios-device-android && cmake --build --preset kernarium-ios-device-android -j3 ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          tail -n 8 /tmp/step.log; df -h /
+      - name: package frameworks and stage
+        run: |
+          if ! ( Kernarium/scripts/package-ios-frameworks.sh --runtimes android && Andarium/scripts/stage-system-image.py ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          tail -n 8 /tmp/step.log; df -h /
+      - name: xcodebuild unsigned
+        run: |
+          if ! ( xcodebuild -project Andarium/Andarium.xcodeproj -scheme Andarium -destination generic/platform=iOS -configuration Release CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= build ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          tail -n 8 /tmp/step.log; df -h /
