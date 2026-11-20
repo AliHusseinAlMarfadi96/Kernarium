@@ -33,6 +33,113 @@ jobs:
           p.write_text(text.replace(call, guard))
           PY
           git diff --check
+      - name: Preserve iOS 26 audio and microphone APIs
+        run: |
+          python3 - <<'PY'
+          import base64
+          from pathlib import Path
+          Path('/tmp/ios26-audio.patch').write_bytes(base64.b64decode(
+              'LS0tIGEvZGFyd2luL2RldmljZS9hdWRpby9hcHBsZV9wbGF5YmFja19zaW5rLm1tCisrKyBiL2Rhcndpbi9kZXZpY2UvYXVkaW8v'
+              'YXBwbGVfcGxheWJhY2tfc2luay5tbQpAQCAtMzMsNiArMzMsMzMgQEAKIAogbmFtZXNwYWNlIHVtbDo6YXVkaW8gewogbmFtZXNw'
+              'YWNlIHsKKworLy8gaU9TIDI2IHVzZXMgZXhjZXB0aW9uLXJlcG9ydGluZyBhdWRpbyBBUElzLiBLZWVwIHRoZSBpT1MgMjcgZXJy'
+              'b3IgQVBJcworLy8gb24gbmV3ZXIgc3lzdGVtcywgYW5kIHRyYW5zbGF0ZSB0aGUgb2xkZXIgY2FsbHMgdG8gdGhlIHNhbWUgc3Vj'
+              'Y2VzcyBmbGFnLgorW1tub2Rpc2NhcmRdXSBib29sIGNvbm5lY3RDb21wYXQoQVZBdWRpb0VuZ2luZSogZW5naW5lLCBBVkF1ZGlv'
+              'Tm9kZSogbm9kZSwKKyAgICBBVkF1ZGlvTm9kZSogbWl4ZXIsIEFWQXVkaW9Gb3JtYXQqIGZvcm1hdCwgTlNFcnJvcioqIGVycm9y'
+              'KQoreworICAgIGlmIChAYXZhaWxhYmxlKGlPUyAyNy4wLCB0dk9TIDI3LjAsIHdhdGNoT1MgMjcuMCwgbWFjT1MgMjcuMCwgKikp'
+              'CisgICAgICAgIHJldHVybiBbZW5naW5lIGNvbm5lY3Q6bm9kZSB0bzptaXhlciBmb3JtYXQ6Zm9ybWF0IGVycm9yOmVycm9yXTsK'
+              'KyAgICBAdHJ5IHsKKyAgICAgICAgW2VuZ2luZSBjb25uZWN0Om5vZGUgdG86bWl4ZXIgZm9ybWF0OmZvcm1hdF07CisgICAgICAg'
+              'IHJldHVybiB0cnVlOworICAgIH0gQGNhdGNoIChOU0V4Y2VwdGlvbiopIHsKKyAgICAgICAgcmV0dXJuIGZhbHNlOworICAgIH0K'
+              'K30KKworW1tub2Rpc2NhcmRdXSBib29sIHBsYXlDb21wYXQoQVZBdWRpb1BsYXllck5vZGUqIHBsYXllciwgTlNFcnJvcioqIGVy'
+              'cm9yKQoreworICAgIGlmIChAYXZhaWxhYmxlKGlPUyAyNy4wLCB0dk9TIDI3LjAsIHdhdGNoT1MgMjcuMCwgbWFjT1MgMjcuMCwg'
+              'KikpCisgICAgICAgIHJldHVybiBbcGxheWVyIHBsYXlBbmRSZXR1cm5FcnJvcjplcnJvcl07CisgICAgQHRyeSB7CisgICAgICAg'
+              'IFtwbGF5ZXIgcGxheV07CisgICAgICAgIHJldHVybiBwbGF5ZXIuaXNQbGF5aW5nOworICAgIH0gQGNhdGNoIChOU0V4Y2VwdGlv'
+              'biopIHsKKyAgICAgICAgcmV0dXJuIGZhbHNlOworICAgIH0KK30KIAogc3RydWN0IE5vdGlmaWNhdGlvbkZsYWdzIGZpbmFsIHsK'
+              'ICAgICBleHBsaWNpdCBOb3RpZmljYXRpb25GbGFncyhzdGQ6OnNoYXJlZF9wdHI8Y29uc3QgV2FrZXI+IHNvdXJjZSkKQEAgLTI0'
+              'OCwxMCArMjc1LDcgQEAKICAgICBbb3V0cHV0LmVuZ2luZSBhdHRhY2hOb2RlOm91dHB1dC5wbGF5ZXJdOwogICAgIGlmIChmb3Jt'
+              'YXQgIT0gbmlsICYmIG91dHB1dFJvdXRlVXAob3V0cHV0LmVuZ2luZSkpIHsKICAgICAgICAgTlNFcnJvciogZXJyb3IgPSBuaWw7'
+              'Ci0gICAgICAgIGlmIChbb3V0cHV0LmVuZ2luZSBjb25uZWN0Om91dHB1dC5wbGF5ZXIKLSAgICAgICAgICAgICAgICAgICAgICAg'
+              'ICAgICAgICAgdG86b3V0cHV0LmVuZ2luZS5tYWluTWl4ZXJOb2RlCi0gICAgICAgICAgICAgICAgICAgICAgICAgICAgZm9ybWF0'
+              'OmZvcm1hdAotICAgICAgICAgICAgICAgICAgICAgICAgICAgICBlcnJvcjomZXJyb3JdKSB7CisgICAgICAgIGlmIChjb25uZWN0'
+              'Q29tcGF0KG91dHB1dC5lbmdpbmUsIG91dHB1dC5wbGF5ZXIsIG91dHB1dC5lbmdpbmUubWFpbk1peGVyTm9kZSwgZm9ybWF0LCAm'
+              'ZXJyb3IpKSB7CiAgICAgICAgICAgICBbb3V0cHV0LmVuZ2luZSBwcmVwYXJlXTsKICAgICAgICAgICAgIG91dHB1dC5jb25uZWN0'
+              'ZWQgPSB0cnVlOwogICAgICAgICB9CkBAIC0zNDgsNiArMzcyLDcgQEAKICAgICAgICAgICogZGVhY3RpdmF0aW9uIHRoYXQgY2Fy'
+              'cmllcyBhbiBpbnRlcnJ1cHRpb24gY29udGV4dC4gRXZlcnkKICAgICAgICAgICogcmVjb21tZW5kYXRpb24gZW5kcyB0aGUgaW50'
+              'ZXJydXB0aW9uOyB3aGV0aGVyIHRoZSBzaW5rIHRha2VzIHRoZQogICAgICAgICAgKiBzZXNzaW9uIGJhY2sgYXQgb25jZSBkZXBl'
+              'bmRzIG9uIGl0cyBhZHZpY2UgKHNlZSBlbmRJbnRlcnJ1cHRpb24pLiAqLworICAgICAgICBpZiAoQGF2YWlsYWJsZShpT1MgMjcu'
+              'MCwgdHZPUyAyNy4wLCB3YXRjaE9TIDI3LjAsICopKSB7CiAgICAgICAgIGRlYWN0aXZhdGlvbk9ic2VydmVyXyA9IFtbTlNOb3Rp'
+              'ZmljYXRpb25DZW50ZXIgZGVmYXVsdENlbnRlcl0KICAgICAgICAgICAgIGFkZE9ic2VydmVyRm9yTmFtZTpBVkF1ZGlvU2Vzc2lv'
+              'bkRpZEJlY29tZUluYWN0aXZlTm90aWZpY2F0aW9uCiAgICAgICAgICAgICAgICAgICAgICAgICBvYmplY3Q6W0FWQXVkaW9TZXNz'
+              'aW9uIHNoYXJlZEluc3RhbmNlXQpAQCAtMzgwLDYgKzQwNSwyNSBAQAogICAgICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAg'
+              'ICAgICAgICAgICAgICBmbGFncy0+c2lnbmFsKGZsYWdzLT5pbnRlcnJ1cHRpb25FbmRlZCk7CiAgICAgICAgICAgICAgICAgICAg'
+              'IH1dOworICAgICAgICB9IGVsc2UgeworICAgICAgICAgICAgZGVhY3RpdmF0aW9uT2JzZXJ2ZXJfID0gW1tOU05vdGlmaWNhdGlv'
+              'bkNlbnRlciBkZWZhdWx0Q2VudGVyXQorICAgICAgICAgICAgICAgIGFkZE9ic2VydmVyRm9yTmFtZTpBVkF1ZGlvU2Vzc2lvbklu'
+              'dGVycnVwdGlvbk5vdGlmaWNhdGlvbgorICAgICAgICAgICAgICAgICAgICAgICAgICAgIG9iamVjdDpbQVZBdWRpb1Nlc3Npb24g'
+              'c2hhcmVkSW5zdGFuY2VdCisgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHF1ZXVlOm5pbAorICAgICAgICAgICAgICAgICAg'
+              'ICAgICAgdXNpbmdCbG9jazpeKE5TTm90aWZpY2F0aW9uKiBub3RpZmljYXRpb24pIHsKKyAgICAgICAgICAgICAgICAgICAgY29u'
+              'c3QgYXV0byBmbGFncyA9IHdlYWtOb3RpZmljYXRpb25zLmxvY2soKTsKKyAgICAgICAgICAgICAgICAgICAgaWYgKCFmbGFncykg'
+              'cmV0dXJuOworICAgICAgICAgICAgICAgICAgICBjb25zdCBOU1VJbnRlZ2VyIHR5cGUgPSBbbm90aWZpY2F0aW9uLnVzZXJJbmZv'
+              'W0FWQXVkaW9TZXNzaW9uSW50ZXJydXB0aW9uVHlwZUtleV0gdW5zaWduZWRJbnRlZ2VyVmFsdWVdOworICAgICAgICAgICAgICAg'
+              'ICAgICBpZiAodHlwZSA9PSBBVkF1ZGlvU2Vzc2lvbkludGVycnVwdGlvblR5cGVCZWdhbikgeworICAgICAgICAgICAgICAgICAg'
+              'ICAgICAgZmxhZ3MtPnNpZ25hbChmbGFncy0+aW50ZXJydXB0aW9uQmVnYW4pOworICAgICAgICAgICAgICAgICAgICB9IGVsc2Ug'
+              'eworICAgICAgICAgICAgICAgICAgICAgICAgY29uc3QgTlNVSW50ZWdlciBvcHRpb25zID0gW25vdGlmaWNhdGlvbi51c2VySW5m'
+              'b1tBVkF1ZGlvU2Vzc2lvbkludGVycnVwdGlvbk9wdGlvbktleV0gdW5zaWduZWRJbnRlZ2VyVmFsdWVdOworICAgICAgICAgICAg'
+              'ICAgICAgICAgICAgaWYgKG9wdGlvbnMgJiBBVkF1ZGlvU2Vzc2lvbkludGVycnVwdGlvbk9wdGlvblNob3VsZFJlc3VtZSkKKyAg'
+              'ICAgICAgICAgICAgICAgICAgICAgICAgICBmbGFncy0+cmVzdW1lUmVjb21tZW5kZWQuc3RvcmUodHJ1ZSwgc3RkOjptZW1vcnlf'
+              'b3JkZXJfcmVsZWFzZSk7CisgICAgICAgICAgICAgICAgICAgICAgICBmbGFncy0+c2lnbmFsKGZsYWdzLT5pbnRlcnJ1cHRpb25F'
+              'bmRlZCk7CisgICAgICAgICAgICAgICAgICAgIH0KKyAgICAgICAgICAgICAgICB9XTsKKyAgICAgICAgfQogI2VuZGlmCiAgICAg'
+              'fQogCkBAIC00NjQsMTAgKzUwOCw3IEBACiAgICAgICAgICAgICBpZiAoIWhlYWx0aF8ubXVzdFJlcGxhY2Uob3V0cHV0Um91dGVV'
+              'cChlbmdpbmVfKSkpIHsKICAgICAgICAgICAgICAgICBbZW5naW5lXyBkaXNjb25uZWN0Tm9kZU91dHB1dDpwbGF5ZXJfXTsKICAg'
+              'ICAgICAgICAgICAgICBOU0Vycm9yKiBjb25uZWN0RXJyb3IgPSBuaWw7Ci0gICAgICAgICAgICAgICAgaWYgKCFbZW5naW5lXyBj'
+              'b25uZWN0OnBsYXllcl8KLSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgdG86ZW5naW5lXy5tYWluTWl4ZXJOb2Rl'
+              'Ci0gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgZm9ybWF0OmZvcm1hdF8KLSAgICAgICAgICAgICAgICAgICAgICAgICAg'
+              'ICAgICAgZXJyb3I6JmNvbm5lY3RFcnJvcl0pIHsKKyAgICAgICAgICAgICAgICBpZiAoIWNvbm5lY3RDb21wYXQoZW5naW5lXywg'
+              'cGxheWVyXywgZW5naW5lXy5tYWluTWl4ZXJOb2RlLCBmb3JtYXRfLCAmY29ubmVjdEVycm9yKSkgewogICAgICAgICAgICAgICAg'
+              'ICAgICBjb25maWd1cmVkXyA9IGZhbHNlOwogICAgICAgICAgICAgICAgICAgICBwcmVwYXJlZF8gPSBmYWxzZTsKICAgICAgICAg'
+              'ICAgICAgICAgICAgcnVubmluZ18gPSBmYWxzZTsKQEAgLTEwMzcsNyArMTA3OCw3IEBACiAgICAgICAgICAgICAgICAgICAgICAg'
+              'Ly8gb2YgYWZ0ZXIgdGhlIHBsYXllcidzIG93biBzdGFydC11cC4KICAgICAgICAgICAgICAgICAgICAgICBpZiAocnVubmluZykg'
+              'ewogICAgICAgICAgICAgICAgICAgICAgICAgICBBVkF1ZGlvUGxheWVyTm9kZSogY29uc3QgcGxheWVyID0gb3V0cHV0LnBsYXll'
+              'cjsKLSAgICAgICAgICAgICAgICAgICAgICAgICAgKHZvaWQpW3BsYXllciBwbGF5QW5kUmV0dXJuRXJyb3I6JmVycm9yXTsKKyAg'
+              'ICAgICAgICAgICAgICAgICAgICAgICAgKHZvaWQpcGxheUNvbXBhdChwbGF5ZXIsICZlcnJvcik7CiAgICAgICAgICAgICAgICAg'
+              'ICAgICAgICAgIC8vIFRoZSBlbmdpbmUgcmVwb3J0cyB0aGF0IGl0IHJ1bnMgd2VsbCBiZWZvcmUgdGhlCiAgICAgICAgICAgICAg'
+              'ICAgICAgICAgICAgIC8vIGF1ZGlvIGhhcmR3YXJlIGRlbGl2ZXJzIGl0cyBmaXJzdCBjeWNsZTogYSBmaWZ0aAogICAgICAgICAg'
+              'ICAgICAgICAgICAgICAgICAvLyBvZiBhIHNlY29uZCBoYXMgYmVlbiBtZWFzdXJlZCBvbiB0aGUgaVBhZCBtaW5pCkBAIC0xMTIx'
+              'LDcgKzExNjIsNyBAQAogICAgICAgICAgICAgfQogICAgICAgICAgICAgbWVhc3VyZU91dHB1dExhdGVuY3koKTsKICAgICAgICAg'
+              'ICAgIGxlYXZlTXV0ZSgpOwotICAgICAgICAgICAgcGxheWluZyA9IFtwbGF5ZXJfIHBsYXlBbmRSZXR1cm5FcnJvcjomZXJyb3Jd'
+              'OworICAgICAgICAgICAgcGxheWluZyA9IHBsYXlDb21wYXQocGxheWVyXywgJmVycm9yKTsKICAgICAgICAgfSBAY2F0Y2ggKE5T'
+              'RXhjZXB0aW9uKikgewogICAgICAgICB9CiAgICAgICAgIGlmIChwbGF5aW5nKSB7CkBAIC0xNTAyLDcgKzE1NDMsNyBAQAogICAg'
+              'ICAgICBAdHJ5IHsKICAgICAgICAgICAgIE5TRXJyb3IqIGVycm9yID0gbmlsOwogICAgICAgICAgICAgbWVhc3VyZU91dHB1dExh'
+              'dGVuY3koKTsKLSAgICAgICAgICAgIGlmIChbcGxheWVyXyBwbGF5QW5kUmV0dXJuRXJyb3I6JmVycm9yXSkKKyAgICAgICAgICAg'
+              'IGlmIChwbGF5Q29tcGF0KHBsYXllcl8sICZlcnJvcikpCiAgICAgICAgICAgICAgICAgcmV0dXJuIE91dHB1dFN0YXJ0OjpydW5u'
+              'aW5nOwogICAgICAgICB9IEBjYXRjaCAoTlNFeGNlcHRpb24qKSB7CiAgICAgICAgIH0KLS0tIGEvZGFyd2luL2RldmljZS9hdWRp'
+              'by9hcHBsZV9taWNyb3Bob25lX2lucHV0Lm1tCisrKyBiL2Rhcndpbi9kZXZpY2UvYXVkaW8vYXBwbGVfbWljcm9waG9uZV9pbnB1'
+              'dC5tbQpAQCAtMjQzLDYgKzI0Myw3IEBACiAgICAgICAgICAqIHNlc3Npb24gd2hlbiB0aGUgbWljcm9waG9uZSBzdG9wcyksIGFu'
+              'ZCB0aGUgc3lzdGVtJ3MgcmVzdW1wdGlvbgogICAgICAgICAgKiByZWNvbW1lbmRhdGlvbi4gQW4gaW50ZXJydXB0aW9uIGlzIGEg'
+              'ZGVhY3RpdmF0aW9uIHRoYXQgY2FycmllcyBhbgogICAgICAgICAgKiBpbnRlcnJ1cHRpb24gY29udGV4dC4gKi8KKyAgICAgICAg'
+              'aWYgKEBhdmFpbGFibGUoaU9TIDI3LjAsIHR2T1MgMjcuMCwgd2F0Y2hPUyAyNy4wLCAqKSkgewogICAgICAgICBkZWFjdGl2YXRp'
+              'b25PYnNlcnZlcl8gPSBbTlNOb3RpZmljYXRpb25DZW50ZXIuZGVmYXVsdENlbnRlcgogICAgICAgICAgICAgYWRkT2JzZXJ2ZXJG'
+              'b3JOYW1lOkFWQXVkaW9TZXNzaW9uRGlkQmVjb21lSW5hY3RpdmVOb3RpZmljYXRpb24KICAgICAgICAgICAgICAgICAgICAgICAg'
+              'IG9iamVjdDpbQVZBdWRpb1Nlc3Npb24gc2hhcmVkSW5zdGFuY2VdCkBAIC0yNzEsNiArMjcyLDIzIEBACiAgICAgICAgICAgICAg'
+              'ICAgICAgICAgY2FwdHVyZS0+cmVzdW1lKGNvbnRleHQucmVjb21tZW5kYXRpb24gPT0KICAgICAgICAgICAgICAgICAgICAgICAg'
+              'ICAgQVZBdWRpb1Nlc3Npb25SZXN1bXB0aW9uUmVjb21tZW5kYXRpb25TaG91bGRSZXN1bWUpOwogICAgICAgICAgICAgICAgICAg'
+              'ICB9XTsKKyAgICAgICAgfSBlbHNlIHsKKyAgICAgICAgICAgIGRlYWN0aXZhdGlvbk9ic2VydmVyXyA9IFtOU05vdGlmaWNhdGlv'
+              'bkNlbnRlci5kZWZhdWx0Q2VudGVyCisgICAgICAgICAgICAgICAgYWRkT2JzZXJ2ZXJGb3JOYW1lOkFWQXVkaW9TZXNzaW9uSW50'
+              'ZXJydXB0aW9uTm90aWZpY2F0aW9uCisgICAgICAgICAgICAgICAgICAgICAgICAgICAgb2JqZWN0OltBVkF1ZGlvU2Vzc2lvbiBz'
+              'aGFyZWRJbnN0YW5jZV0KKyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcXVldWU6bmlsCisgICAgICAgICAgICAgICAgICAg'
+              'ICAgICB1c2luZ0Jsb2NrOl4oTlNOb3RpZmljYXRpb24qIG5vdGlmaWNhdGlvbikgeworICAgICAgICAgICAgICAgICAgICBjb25z'
+              'dCBhdXRvIGNhcHR1cmUgPSB3ZWFrLmxvY2soKTsKKyAgICAgICAgICAgICAgICAgICAgaWYgKCFjYXB0dXJlKSByZXR1cm47Cisg'
+              'ICAgICAgICAgICAgICAgICAgIGNvbnN0IE5TVUludGVnZXIgdHlwZSA9IFtub3RpZmljYXRpb24udXNlckluZm9bQVZBdWRpb1Nl'
+              'c3Npb25JbnRlcnJ1cHRpb25UeXBlS2V5XSB1bnNpZ25lZEludGVnZXJWYWx1ZV07CisgICAgICAgICAgICAgICAgICAgIGlmICh0'
+              'eXBlID09IEFWQXVkaW9TZXNzaW9uSW50ZXJydXB0aW9uVHlwZUJlZ2FuKSB7CisgICAgICAgICAgICAgICAgICAgICAgICBjYXB0'
+              'dXJlLT5pbnRlcnJ1cHQoKTsKKyAgICAgICAgICAgICAgICAgICAgfSBlbHNlIHsKKyAgICAgICAgICAgICAgICAgICAgICAgIGNv'
+              'bnN0IE5TVUludGVnZXIgb3B0aW9ucyA9IFtub3RpZmljYXRpb24udXNlckluZm9bQVZBdWRpb1Nlc3Npb25JbnRlcnJ1cHRpb25P'
+              'cHRpb25LZXldIHVuc2lnbmVkSW50ZWdlclZhbHVlXTsKKyAgICAgICAgICAgICAgICAgICAgICAgIGNhcHR1cmUtPnJlc3VtZSgo'
+              'b3B0aW9ucyAmIEFWQXVkaW9TZXNzaW9uSW50ZXJydXB0aW9uT3B0aW9uU2hvdWxkUmVzdW1lKSAhPSAwKTsKKyAgICAgICAgICAg'
+              'ICAgICAgICAgfQorICAgICAgICAgICAgICAgIH1dOworICAgICAgICB9CiAjZW5kaWYKICAgICB9CiAK'
+          ))
+          PY
+          git apply --check /tmp/ios26-audio.patch
+          git apply /tmp/ios26-audio.patch
+          git diff --check
       - name: Build tools
         run: |
           xcodebuild -version; df -h /
@@ -42,37 +149,37 @@ jobs:
           git config --global user.email ci@example.com; git config --global user.name ci
       - name: deps ios-network
         run: |
-          if ! ( ./dependencies/prepare.sh --product ios-network && ./dependencies/build-ios-network.sh --platform ios --jobs 3 ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          if ! ( ./dependencies/prepare.sh --product ios-network && ./dependencies/build-ios-network.sh --platform ios --jobs 3 ) > /tmp/step.log 2>&1; then grep -n -B 2 -A 6 "error:" /tmp/step.log || true; tail -n 120 /tmp/step.log; exit 1; fi
           tail -n 8 /tmp/step.log; df -h /
       - name: deps ios-storage
         run: |
-          if ! ( ./dependencies/prepare.sh --product ios-storage && ./dependencies/build-ios-storage.sh ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          if ! ( ./dependencies/prepare.sh --product ios-storage && ./dependencies/build-ios-storage.sh ) > /tmp/step.log 2>&1; then grep -n -B 2 -A 6 "error:" /tmp/step.log || true; tail -n 120 /tmp/step.log; exit 1; fi
           tail -n 8 /tmp/step.log; df -h /
       - name: deps ios-compression
         run: |
-          if ! ( ./dependencies/prepare.sh --product ios-compression && ./dependencies/build-ios-zstd.sh ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          if ! ( ./dependencies/prepare.sh --product ios-compression && ./dependencies/build-ios-zstd.sh ) > /tmp/step.log 2>&1; then grep -n -B 2 -A 6 "error:" /tmp/step.log || true; tail -n 120 /tmp/step.log; exit 1; fi
           tail -n 8 /tmp/step.log; df -h /
       - name: deps apple-gpu ios
         run: |
-          if ! ( ./dependencies/prepare.sh --product apple-gpu-vulkan-experiment && ./dependencies/build-apple-gpu.sh --platform ios --jobs 3 ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          if ! ( ./dependencies/prepare.sh --product apple-gpu-vulkan-experiment && ./dependencies/build-apple-gpu.sh --platform ios --jobs 3 ) > /tmp/step.log 2>&1; then grep -n -B 2 -A 6 "error:" /tmp/step.log || true; tail -n 120 /tmp/step.log; exit 1; fi
           tail -n 8 /tmp/step.log; df -h /
       - name: fetch release assets
         run: |
-          if ! ( set -e; mkdir -p /tmp/rel .build/kernel/artifacts; cd /tmp/rel; curl -fsSL -O https://github.com/imxieyi/Kernarium/releases/download/1.0b15-release/android-6.18-arm64-4k-20261117-6.18.60-vd2.tar.gz -O https://github.com/imxieyi/Kernarium/releases/download/1.0b15-release/lineage24-mainline6.18-4k-20261115-los24-r28.tar.gz; ls -la; tar -tzf android-6.18-arm64-4k-20261117-6.18.60-vd2.tar.gz | head -5; tar -tzf lineage24-mainline6.18-4k-20261115-los24-r28.tar.gz | head -5; tar -xzf android-6.18-arm64-4k-20261117-6.18.60-vd2.tar.gz -C "$GITHUB_WORKSPACE/.build/kernel/artifacts"; mkdir -p rel && tar -xzf lineage24-mainline6.18-4k-20261115-los24-r28.tar.gz -C rel; ls "$GITHUB_WORKSPACE/.build/kernel/artifacts" rel ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          if ! ( set -e; mkdir -p /tmp/rel .build/kernel/artifacts; cd /tmp/rel; curl -fsSL -O https://github.com/imxieyi/Kernarium/releases/download/1.0b15-release/android-6.18-arm64-4k-20261117-6.18.60-vd2.tar.gz -O https://github.com/imxieyi/Kernarium/releases/download/1.0b15-release/lineage24-mainline6.18-4k-20261115-los24-r28.tar.gz; ls -la; tar -tzf android-6.18-arm64-4k-20261117-6.18.60-vd2.tar.gz | head -5; tar -tzf lineage24-mainline6.18-4k-20261115-los24-r28.tar.gz | head -5; tar -xzf android-6.18-arm64-4k-20261117-6.18.60-vd2.tar.gz -C "$GITHUB_WORKSPACE/.build/kernel/artifacts"; mkdir -p rel && tar -xzf lineage24-mainline6.18-4k-20261115-los24-r28.tar.gz -C rel; ls "$GITHUB_WORKSPACE/.build/kernel/artifacts" rel ) > /tmp/step.log 2>&1; then grep -n -B 2 -A 6 "error:" /tmp/step.log || true; tail -n 120 /tmp/step.log; exit 1; fi
           tail -n 8 /tmp/step.log; df -h /
       - name: install release
         run: |
-          if ! ( ls /tmp/rel/rel; python3 android/lineage-24/tools/install-release.py --source "$(ls -d /tmp/rel/rel/* | head -1)" || python3 android/lineage-24/tools/install-release.py --source /tmp/rel/rel ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          if ! ( ls /tmp/rel/rel; python3 android/lineage-24/tools/install-release.py --source "$(ls -d /tmp/rel/rel/* | head -1)" || python3 android/lineage-24/tools/install-release.py --source /tmp/rel/rel ) > /tmp/step.log 2>&1; then grep -n -B 2 -A 6 "error:" /tmp/step.log || true; tail -n 120 /tmp/step.log; exit 1; fi
           tail -n 8 /tmp/step.log; df -h /
       - name: runtime cmake
         run: |
-          if ! ( cmake --preset kernarium-ios-device-android && cmake --build --preset kernarium-ios-device-android -j3 ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          if ! ( cmake --preset kernarium-ios-device-android && cmake --build --preset kernarium-ios-device-android -j3 ) > /tmp/step.log 2>&1; then grep -n -B 2 -A 6 "error:" /tmp/step.log || true; tail -n 120 /tmp/step.log; exit 1; fi
           tail -n 8 /tmp/step.log; df -h /
       - name: package frameworks and stage
         run: |
-          if ! ( Kernarium/scripts/package-ios-frameworks.sh --runtimes android && Andarium/scripts/stage-system-image.py ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          if ! ( Kernarium/scripts/package-ios-frameworks.sh --runtimes android && Andarium/scripts/stage-system-image.py ) > /tmp/step.log 2>&1; then grep -n -B 2 -A 6 "error:" /tmp/step.log || true; tail -n 120 /tmp/step.log; exit 1; fi
           tail -n 8 /tmp/step.log; df -h /
       - name: xcodebuild unsigned
         run: |
-          if ! ( xcodebuild -project Andarium/Andarium.xcodeproj -scheme Andarium -destination generic/platform=iOS -configuration Release CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= build ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          if ! ( xcodebuild -project Andarium/Andarium.xcodeproj -scheme Andarium -destination generic/platform=iOS -configuration Release CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= build ) > /tmp/step.log 2>&1; then grep -n -B 2 -A 6 "error:" /tmp/step.log || true; tail -n 120 /tmp/step.log; exit 1; fi
           tail -n 8 /tmp/step.log; df -h /
