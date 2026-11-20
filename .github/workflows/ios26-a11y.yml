@@ -7,33 +7,47 @@ defaults:
 jobs:
   talkback-apks:
     runs-on: xcode-27
-    timeout-minutes: 240
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
         with:
           ref: a6f99bdd3ba5b3c0fff8c2bf226bd8a59e7d0b0a
       - name: Tools and SDK
         run: |
-          set -x
-          uname -m; java -version 2>&1 | head -2; echo "ANDROID_HOME=$ANDROID_HOME JAVA_HOME=$JAVA_HOME"; ls "$ANDROID_HOME" "$ANDROID_HOME/ndk" "$ANDROID_HOME/platforms" 2>&1 | head -30
-          brew install gnu-tar rsync python@3.12 || true
-          git config --global user.email ci@example.com; git config --global user.name ci
+          set -euo pipefail
+          uname -m
+          export JAVA_HOME=${JAVA_HOME_17_arm64:-$JAVA_HOME}
+          java -version
+          echo "ANDROID_HOME=$ANDROID_HOME JAVA_HOME=$JAVA_HOME"
+          brew install gnu-tar rsync python@3.12
+          git config --global user.email ci@example.com
+          git config --global user.name ci
       - name: Install SDK components
         run: |
-          SDKM=$(ls "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | head -1); echo $SDKM
-          yes | "$SDKM" --licenses > /dev/null 2>&1 || true
-          "$SDKM" "platforms;android-36" "ndk;29.0.14206865" "cmake;3.22.1" "build-tools;36.0.0" 2>&1 | tail -5
+          set -euo pipefail
+          SDKM=$(ls "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | head -1)
+          set +o pipefail
+          yes | "$SDKM" --licenses > /tmp/android-licenses.log 2>&1
+          set -o pipefail
+          "$SDKM" "platforms;android-36" "ndk;29.0.14206865" "cmake;3.22.1" "build-tools;36.0.0"
           ls "$ANDROID_HOME/ndk" "$ANDROID_HOME/build-tools"
-      - name: Prepare sources and archives
+      - name: Prepare pinned sources and archives
         run: |
-          if ! ( ./dependencies/prepare.sh --product andarium-accessibility && ./dependencies/prepare.sh --archive-manifest dependencies/andarium-accessibility/archives.tsv ) > /tmp/s.log 2>&1; then tail -n 80 /tmp/s.log; exit 1; fi
-          tail -n 5 /tmp/s.log; df -h /
-      - name: Build TalkBack and eSpeak NG
+          if ! ( set -e; ./dependencies/prepare.sh --product andarium-accessibility; ./dependencies/prepare.sh --archive-manifest dependencies/andarium-accessibility/archives.tsv ) > /tmp/a11y-prepare.log 2>&1; then tail -n 100 /tmp/a11y-prepare.log; exit 1; fi
+          tail -n 8 /tmp/a11y-prepare.log
+          df -h /
+      - name: Build unsigned TalkBack and eSpeak NG only
         run: |
           export JAVA_HOME=${JAVA_HOME_17_arm64:-$JAVA_HOME}
-          if ! ./dependencies/build-andarium-accessibility.sh > /tmp/b.log 2>&1; then tail -n 120 /tmp/b.log; exit 1; fi
-          tail -n 10 /tmp/b.log; ls -la .build/andarium-accessibility; cat .build/andarium-accessibility/artifact.json | head -40
+          if ! ./dependencies/build-andarium-accessibility.sh > /tmp/a11y-build.log 2>&1; then tail -n 140 /tmp/a11y-build.log; exit 1; fi
+          tail -n 15 /tmp/a11y-build.log
+          ls -la .build/andarium-accessibility
+          cat .build/andarium-accessibility/artifact.json
+          for source in talkback espeak-ng sonic; do git -C "external/sources/$source" archive --format=tar.gz HEAD -o "$GITHUB_WORKSPACE/.build/andarium-accessibility/$source-source.tar.gz"; done
+          cp dependencies/andarium-accessibility/archives.tsv .build/andarium-accessibility/
       - uses: actions/upload-artifact@v4
         with:
-          name: andarium-accessibility
+          name: andarium-accessibility-UNSIGNED
           path: .build/andarium-accessibility
+          retention-days: 1
+          if-no-files-found: error
