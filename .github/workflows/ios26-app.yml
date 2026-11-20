@@ -164,6 +164,36 @@ jobs:
           git apply --check /tmp/ios26-audio.patch
           git apply /tmp/ios26-audio.patch
           git diff --check
+      - name: Guard camera platform probe and use SDK-supported motion status
+        run: |
+          python3 - <<'PY'
+          import base64
+          from pathlib import Path
+          Path('/tmp/ios26-swift.patch').write_bytes(base64.b64decode(
+              'LS0tIGEvQW5kYXJpdW0vQW5kYXJpdW0vTGl2ZS9Nb3Rpb25TZW5zb3JzLnN3aWZ0CisrKyBiL0FuZGFyaXVtL0FuZGFyaXVtL0xp'
+              'dmUvTW90aW9uU2Vuc29ycy5zd2lmdApAQCAtMjg4LDcgKzI4OCw4IEBACiAgICAgICAgICAgICBtYWduZXRvbWV0ZXI6IG1hbmFn'
+              'ZXIuaXNNYWduZXRvbWV0ZXJBdmFpbGFibGUsIGRldmljZU1vdGlvbjogbWFuYWdlci5pc0RldmljZU1vdGlvbkF2YWlsYWJsZSwK'
+              'ICAgICAgICAgICAgIG5vcnRoRnJhbWU6IHsgQ01Nb3Rpb25NYW5hZ2VyLmF2YWlsYWJsZUF0dGl0dWRlUmVmZXJlbmNlRnJhbWVz'
+              'KCkuY29udGFpbnMoLnhNYWduZXRpY05vcnRoWlZlcnRpY2FsKSB9LAogICAgICAgICAgICAgYXV0aG9yaXphdGlvbjogewotICAg'
+              'ICAgICAgICAgICAgIGlmICNhdmFpbGFibGUoaU9TIDI3LjIsICopIHsgcmV0dXJuIENNTW90aW9uTWFuYWdlci5hdXRob3JpemF0'
+              'aW9uU3RhdHVzIH0KKyAgICAgICAgICAgICAgICAvLyBYY29kZSAyNy4xIFNESyBoYXMgbm8gMjcuMiBwZXJtaXNzaW9uIHF1ZXJ5'
+              'LiBQcmVzZXJ2ZSB0aGUKKyAgICAgICAgICAgICAgICAvLyBleGlzdGluZyB1bmtub3duLXBlcm1pc3Npb24gcGF0aCBmb3IgdGhl'
+              'IGlPUyAyNiBidWlsZC4KICAgICAgICAgICAgICAgICByZXR1cm4gbmlsCiAgICAgICAgICAgICB9KQogICAgICAgICAjaWYgIUFQ'
+              'UF9TVE9SRQotLS0gYS9BbmRhcml1bS9BbmRhcml1bS9TaGFyZWQvU3lzdGVtQ2FtZXJhU291cmNlLnN3aWZ0CisrKyBiL0FuZGFy'
+              'aXVtL0FuZGFyaXVtL1NoYXJlZC9TeXN0ZW1DYW1lcmFTb3VyY2Uuc3dpZnQKQEAgLTE2LDggKzE2LDExIEBACiAgICAgLy8vIFRo'
+              'aXMgcHJvY2VzcywgYXMgdGhlIHN5c3RlbSByZXBvcnRzIGl0LgogICAgIHN0YXRpYyB2YXIgc3lzdGVtOiBDYW1lcmFQbGF0Zm9y'
+              'bSB7CiAgICAgICAgIGxldCBpbmZvID0gUHJvY2Vzc0luZm8ucHJvY2Vzc0luZm8KKyAgICAgICAgbGV0IG9uVmlzaW9uOiBCb29s'
+              'CisgICAgICAgIGlmICNhdmFpbGFibGUoaU9TIDI2LjEsICopIHsgb25WaXNpb24gPSBpbmZvLmlzaU9TQXBwT25WaXNpb24gfQor'
+              'ICAgICAgICBlbHNlIHsgb25WaXNpb24gPSBmYWxzZSB9CiAgICAgICAgIHJldHVybiBDYW1lcmFQbGF0Zm9ybSgKLSAgICAgICAg'
+              'ICAgIGlzaU9TQXBwT25NYWM6IGluZm8uaXNpT1NBcHBPbk1hYywgaXNpT1NBcHBPblZpc2lvbjogaW5mby5pc2lPU0FwcE9uVmlz'
+              'aW9uLAorICAgICAgICAgICAgaXNpT1NBcHBPbk1hYzogaW5mby5pc2lPU0FwcE9uTWFjLCBpc2lPU0FwcE9uVmlzaW9uOiBvblZp'
+              'c2lvbiwKICAgICAgICAgICAgIGhhc0Zyb250Q2FtZXJhOiB7IFN5c3RlbUNhbWVyYVNvdXJjZS5oYXNGcm9udENhbWVyYSB9KQog'
+              'ICAgIH0KIAo='
+          ))
+          PY
+          git apply --check /tmp/ios26-swift.patch
+          git apply /tmp/ios26-swift.patch
+          git diff --check
       - name: Build tools
         run: |
           xcodebuild -version; df -h /
