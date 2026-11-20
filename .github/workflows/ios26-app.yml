@@ -15,12 +15,24 @@ jobs:
       - name: Lower iOS deployment target to 26.0
         run: |
           sed -i '' -E 's/(DEPLOYMENT_TARGET[ =]+)27\.0/\126.0/; s/(deployment_target[[:space:]]+)27\.0/\126.0/; s/MINOS 27\.0/MINOS 26.0/; s/(_uml_apple_deployment_target )27\.0/\126.0/; s/(_deployment_target )27\.0/\126.0/' \
-            cmake/toolchains/Apple.cmake dependencies/build*.sh dependencies/ios-static-xcframework.sh dependencies/cmake/Verify*.cmake \
+            cmake/toolchains/Apple.cmake dependencies/build-ios*.sh dependencies/build-apple-gpu*.sh dependencies/ios-static-xcframework.sh dependencies/cmake/Verify*.cmake \
             dependencies/platforms/ios-*.tsv
-          sed -i '' -E 's/\.macOS\("27\.0"\), \.iOS\("27\.0"\)/.macOS("26.0"), .iOS("26.0")/' Andarium/AndariumCore/Package.swift GuestHost/Core/Package.swift
+          sed -i '' -E 's/\.iOS\("27\.0"\)/.iOS("26.0")/' Andarium/AndariumCore/Package.swift GuestHost/Core/Package.swift
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 27\.0/IPHONEOS_DEPLOYMENT_TARGET = 26.0/' Kernarium/Kernarium.xcodeproj/project.pbxproj Kernarium/AudioInterrupter/AudioInterrupter.xcodeproj/project.pbxproj
           sed -i '' 's/"IPHONEOS_DEPLOYMENT_TARGET": "27.0"/"IPHONEOS_DEPLOYMENT_TARGET": "26.0"/' Andarium/Andarium.xcodeproj/project.xcproj
           git diff --stat | tail -2
+      - name: Guard supplemental VP9 decoder on iOS 26.0 and 26.1
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('darwin/platform/apple/video_decoder.mm')
+          text = p.read_text()
+          call = 'VTRegister' + 'SupplementalVideoDecoderIfAvailable(kCMVideoCodecType_VP9);'
+          assert text.count(call) == 1, 'Unexpected supplemental decoder call count'
+          guard = 'if (@available(iOS 26.2, tvOS 26.2, visionOS 26.2, macOS 11.0, *)) {\n            ' + call + '\n        } else {\n            return false;\n        }'
+          p.write_text(text.replace(call, guard))
+          PY
+          git diff --check
       - name: Build tools
         run: |
           xcodebuild -version; df -h /
