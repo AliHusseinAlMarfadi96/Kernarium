@@ -1,0 +1,39 @@
+name: ios26-a11y
+on:
+  workflow_dispatch:
+defaults:
+  run:
+    shell: bash
+jobs:
+  talkback-apks:
+    runs-on: xcode-27
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: a6f99bdd3ba5b3c0fff8c2bf226bd8a59e7d0b0a
+      - name: Tools and SDK
+        run: |
+          set -x
+          uname -m; java -version 2>&1 | head -2; echo "ANDROID_HOME=$ANDROID_HOME JAVA_HOME=$JAVA_HOME"; ls "$ANDROID_HOME" "$ANDROID_HOME/ndk" "$ANDROID_HOME/platforms" 2>&1 | head -30
+          brew install gnu-tar rsync python@3.12 || true
+          git config --global user.email ci@example.com; git config --global user.name ci
+      - name: Install SDK components
+        run: |
+          SDKM=$(ls "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | head -1); echo $SDKM
+          yes | "$SDKM" --licenses > /dev/null 2>&1 || true
+          "$SDKM" "platforms;android-36" "ndk;29.0.14206865" "cmake;3.22.1" "build-tools;36.0.0" 2>&1 | tail -5
+          ls "$ANDROID_HOME/ndk" "$ANDROID_HOME/build-tools"
+      - name: Prepare sources and archives
+        run: |
+          if ! ( ./dependencies/prepare.sh --product andarium-accessibility && ./dependencies/prepare.sh --archive-manifest dependencies/andarium-accessibility/archives.tsv ) > /tmp/s.log 2>&1; then tail -n 80 /tmp/s.log; exit 1; fi
+          tail -n 5 /tmp/s.log; df -h /
+      - name: Build TalkBack and eSpeak NG
+        run: |
+          export JAVA_HOME=${JAVA_HOME_17_arm64:-$JAVA_HOME}
+          if ! ./dependencies/build-andarium-accessibility.sh > /tmp/b.log 2>&1; then tail -n 120 /tmp/b.log; exit 1; fi
+          tail -n 10 /tmp/b.log; ls -la .build/andarium-accessibility; cat .build/andarium-accessibility/artifact.json | head -40
+      - uses: actions/upload-artifact@v4
+        with:
+          name: andarium-accessibility
+          path: .build/andarium-accessibility
