@@ -235,5 +235,37 @@ jobs:
           tail -n 8 /tmp/step.log; df -h /
       - name: xcodebuild unsigned
         run: |
-          if ! ( xcodebuild -project Andarium/Andarium.xcodeproj -scheme Andarium -destination generic/platform=iOS -configuration Release CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= build ) > /tmp/step.log 2>&1; then grep -n -B 2 -A 6 "error:" /tmp/step.log || true; tail -n 120 /tmp/step.log; exit 1; fi
+          if ! ( xcodebuild -project Andarium/Andarium.xcodeproj -scheme Andarium -destination generic/platform=iOS -configuration Release -derivedDataPath /tmp/andarium-derived CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= build ) > /tmp/step.log 2>&1; then grep -n -B 2 -A 6 "error:" /tmp/step.log || true; tail -n 120 /tmp/step.log; exit 1; fi
           tail -n 8 /tmp/step.log; df -h /
+      - name: Package unsigned test IPA and record deployment metadata
+        run: |
+          set -euo pipefail
+          app=/tmp/andarium-derived/Build/Products/Release-iphoneos/Andarium.app
+          test -d "$app"
+          mkdir -p /tmp/unsigned-output/Payload /tmp/unsigned-delivery
+          ditto "$app" /tmp/unsigned-output/Payload/Andarium.app
+          /usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$app/Info.plist" | tee /tmp/unsigned-delivery/minimum-ios.txt
+          python3 - <<'PY'
+          import plistlib
+          from pathlib import Path
+          p=Path('/tmp/andarium-derived/Build/Products/Release-iphoneos/Andarium.app/Info.plist')
+          info=plistlib.loads(p.read_bytes())
+          assert info['MinimumOSVersion']=='26.0', info['MinimumOSVersion']
+          PY
+          xcrun vtool -show-build "$app/Andarium" > /tmp/unsigned-delivery/app-build-metadata.txt
+          find "$app" -name '*.dylib' -o -type d -name '*.framework' > /tmp/unsigned-delivery/embedded-components.txt
+          (cd /tmp/unsigned-output && ditto -c -k --sequesterRsrc --keepParent Payload /tmp/unsigned-delivery/Andarium-iOS26-UNSIGNED.ipa)
+          git diff --binary > /tmp/unsigned-delivery/ios26-source-changes.patch
+          git archive --format=tar.gz HEAD -o /tmp/unsigned-delivery/pinned-source.tar.gz
+          git rev-parse HEAD > /tmp/unsigned-delivery/source-commit.txt
+          printf '%s\n' 'Unsigned experimental iOS 26 build. Compilation passed, device operation is untested. No signing or provisioning profile was added. Installability and required entitlements remain unverified. Source archive is the pinned base; apply ios26-source-changes.patch. The included Android system image is the unmodified upstream accepted r28 release. TalkBack and TTS are not included in that image. See source LICENSE and LICENSES.' > /tmp/unsigned-delivery/README.txt
+          (cd /tmp/unsigned-delivery && shasum -a 256 Andarium-iOS26-UNSIGNED.ipa pinned-source.tar.gz ios26-source-changes.patch > SHA256SUMS.txt)
+          du -sh /tmp/unsigned-delivery/*
+      - name: Save unsigned test build for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: Andarium-iOS26-UNSIGNED-test
+          path: /tmp/unsigned-delivery/
+          retention-days: 1
+          compression-level: 0
+          if-no-files-found: error
