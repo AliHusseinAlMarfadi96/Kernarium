@@ -1,34 +1,65 @@
 name: ios26-probe
 on:
   workflow_dispatch:
+defaults:
+  run:
+    shell: bash
 jobs:
-  deps-network:
+  deps-small:
     runs-on: xcode-27
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - name: Lower iOS deployment target to 26.0
         run: |
-          set -eu
           sed -i '' -E 's/(DEPLOYMENT_TARGET[ =]+)27\.0/\126.0/; s/(deployment_target[[:space:]]+)27\.0/\126.0/; s/MINOS 27\.0/MINOS 26.0/; s/(_uml_apple_deployment_target )27\.0/\126.0/; s/(_deployment_target )27\.0/\126.0/' \
             cmake/toolchains/Apple.cmake dependencies/build*.sh dependencies/ios-static-xcframework.sh dependencies/cmake/Verify*.cmake \
             dependencies/platforms/ios-*.tsv
           sed -i '' -E 's/\.macOS\("27\.0"\), \.iOS\("27\.0"\)/.macOS("26.0"), .iOS("26.0")/' Andarium/AndariumCore/Package.swift GuestHost/Core/Package.swift
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 27\.0/IPHONEOS_DEPLOYMENT_TARGET = 26.0/' Kernarium/Kernarium.xcodeproj/project.pbxproj Kernarium/AudioInterrupter/AudioInterrupter.xcodeproj/project.pbxproj
           sed -i '' 's/"IPHONEOS_DEPLOYMENT_TARGET": "27.0"/"IPHONEOS_DEPLOYMENT_TARGET": "26.0"/' Andarium/Andarium.xcodeproj/project.xcproj
-          git diff --stat | tail -3
-      - name: Toolchain and resources
-        run: |
-          xcodebuild -version; xcrun --sdk iphoneos --show-sdk-version; sysctl -n hw.memsize; df -h /
+          git diff --stat | tail -2
       - name: Build tools
-        run: brew install cmake ninja meson autoconf automake gettext libtool gperf groff pkg-config rsync python@3.12 && pip3 install --break-system-packages mako pyyaml packaging || true
-      - name: Prepare ios-network sources
         run: |
+          xcodebuild -version; df -h /
+          brew install cmake ninja meson autoconf automake gettext libtool gperf groff pkg-config rsync python@3.12
+          pip3 install --break-system-packages mako pyyaml packaging
+          xcodebuild -downloadComponent MetalToolchain || true
           git config --global user.email ci@example.com; git config --global user.name ci
-          ./dependencies/prepare.sh --help 2>&1 | head -30
-          ./dependencies/prepare.sh --product ios-network 2>&1 | tail -40
-      - name: Build ios-network at 26.0
-        run: ./dependencies/build-ios-network.sh --platform ios --jobs 3 2>&1 | tail -80
-      - name: Disk after
-        if: always()
-        run: df -h /
+      - name: ios-network
+        run: |
+          if ! ( ./dependencies/prepare.sh --product ios-network && ./dependencies/build-ios-network.sh --platform ios --jobs 3 ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          tail -n 8 /tmp/step.log; df -h /
+      - name: ios-storage
+        run: |
+          if ! ( ./dependencies/prepare.sh --product ios-storage && ./dependencies/build-ios-storage.sh ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          tail -n 8 /tmp/step.log; df -h /
+      - name: ios-compression
+        run: |
+          if ! ( ./dependencies/prepare.sh --product ios-compression && ./dependencies/build-ios-zstd.sh ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          tail -n 8 /tmp/step.log; df -h /
+  deps-gpu:
+    runs-on: xcode-27
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lower iOS deployment target to 26.0
+        run: |
+          sed -i '' -E 's/(DEPLOYMENT_TARGET[ =]+)27\.0/\126.0/; s/(deployment_target[[:space:]]+)27\.0/\126.0/; s/MINOS 27\.0/MINOS 26.0/; s/(_uml_apple_deployment_target )27\.0/\126.0/; s/(_deployment_target )27\.0/\126.0/' \
+            cmake/toolchains/Apple.cmake dependencies/build*.sh dependencies/ios-static-xcframework.sh dependencies/cmake/Verify*.cmake \
+            dependencies/platforms/ios-*.tsv
+          sed -i '' -E 's/\.macOS\("27\.0"\), \.iOS\("27\.0"\)/.macOS("26.0"), .iOS("26.0")/' Andarium/AndariumCore/Package.swift GuestHost/Core/Package.swift
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 27\.0/IPHONEOS_DEPLOYMENT_TARGET = 26.0/' Kernarium/Kernarium.xcodeproj/project.pbxproj Kernarium/AudioInterrupter/AudioInterrupter.xcodeproj/project.pbxproj
+          sed -i '' 's/"IPHONEOS_DEPLOYMENT_TARGET": "27.0"/"IPHONEOS_DEPLOYMENT_TARGET": "26.0"/' Andarium/Andarium.xcodeproj/project.xcproj
+          git diff --stat | tail -2
+      - name: Build tools
+        run: |
+          xcodebuild -version; df -h /
+          brew install cmake ninja meson autoconf automake gettext libtool gperf groff pkg-config rsync python@3.12
+          pip3 install --break-system-packages mako pyyaml packaging
+          xcodebuild -downloadComponent MetalToolchain || true
+          git config --global user.email ci@example.com; git config --global user.name ci
+      - name: apple-gpu ios
+        run: |
+          if ! ( ./dependencies/prepare.sh --product apple-gpu-vulkan-experiment && ./dependencies/build-apple-gpu.sh --platform ios --jobs 3 ) > /tmp/step.log 2>&1; then tail -n 120 /tmp/step.log; exit 1; fi
+          tail -n 8 /tmp/step.log; df -h /
